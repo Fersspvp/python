@@ -5,39 +5,34 @@ import asyncio
 import yt_dlp
 from collections import deque
 import re
-import getpass
+import json
 from discord.ui import View, Button
-
-# ----- Intents -----
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ----- Globale Variablen -----
+bot = commands.Bot(command_prefix="!", intents=intents)
 ALLOWED_ROLES = ["Admin", "Moderators", "Owner"]
-owner = [1278754690582188158, 1405281511158055053]
+owner = [1278754690582188158,1405281511158055053]
+
 queues = {}
 TICKET_EMOJI = "🎫"
+ticket_message_id = None  
+
 
 ADMIN_ROLE_ID = 1392592314714685580
 MOD_ROLE_ID = 1385248655446900786
 
-# Badwords einlesen
+
 with open("en.txt", "r") as f:
     badwords = f.read().splitlines()
 
-# ----- Rollen Check -----
-def rollen_check(interaction: discord.Interaction):
-    if not interaction.guild:
-        return False
-    user_roles = [role.name.lower() for role in interaction.user.roles]
-    return any(allowed_role.lower() in user_roles for allowed_role in ALLOWED_ROLES)
 
-# ----- Events -----
+
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+    await bot.tree.sync() 
     print(f"Bot eingeloggt als {bot.user}. Slash-Commands global synchronisiert!")
+
 
 @bot.event
 async def on_member_join(member):
@@ -48,13 +43,51 @@ async def on_member_join(member):
 @bot.event
 async def on_message(message):
     if message.author.bot:
-        return
+        return  
+
+  
     if any(word in message.content.lower() for word in badwords):
         await message.delete()
         await message.channel.send(f"{message.author.mention}, this server doesnt allow swear words if you have a issue open a ticket in the ticket channel", delete_after=5)
+
     await bot.process_commands(message)
 
-# ----- Slash Commands -----
+
+@bot.tree.command(name="poll", description="Erstelle eine Umfrage")
+@app_commands.describe(question="Die Frage der Umfrage", option1="Antwort 1", option2="Antwort 2", option3="Antwort 3 (optional)", option4="Antwort 4 (optional)")
+async def poll(interaction: discord.Interaction, question: str, option1: str, option2: str, option3: str = None, option4: str = None):
+    options = [option1, option2]
+    if option3:
+        options.append(option3)
+    if option4:
+        options.append(option4)
+
+    embed = discord.Embed(title="Neue Umfrage!", description=question, color=discord.Color.blue())
+    description = ""
+    emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"]
+    for i, option in enumerate(options):
+        description += f"{emojis[i]} {option}\n"
+    embed.add_field(name="Antworten", value=description, inline=False)
+    embed.set_footer(text=f"Umfrage erstellt von {interaction.user.display_name}")
+    await interaction.response.send_message(embed=embed)
+    message_obj = await interaction.original_response()
+
+
+    # Reaktionen hinzufügen
+    for i in range(len(options)):
+        await message_obj.add_reaction(emojis[i])
+
+
+
+
+def rollen_check(interaction: discord.Interaction):
+    if not interaction.guild:  
+        return False
+    user_roles = [role.name.lower() for role in interaction.user.roles]
+    return any(allowed_role in user_roles for allowed_role in ALLOWED_ROLES)
+
+
+#-----ban-----#
 @bot.tree.command(name="ban", description="Ban a member from the server")
 @app_commands.describe(member="The member to ban", reason="Reason for the ban")
 @app_commands.check(rollen_check)
@@ -62,12 +95,15 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
     if member == interaction.user:
         await interaction.response.send_message("You cannot ban yourself.", ephemeral=True)
         return
+
     if member == interaction.guild.me:
         await interaction.response.send_message("I cannot ban myself.", ephemeral=True)
         return
+
     if interaction.user.top_role <= member.top_role:
         await interaction.response.send_message("You cannot ban a member with an equal or higher role.", ephemeral=True)
         return
+
     try:
         await member.ban(reason=reason)
         await interaction.response.send_message(f"Member {member} has been banned.\nReason: {reason}")
@@ -83,40 +119,53 @@ async def ban_error(interaction: discord.Interaction, error):
     else:
         await interaction.response.send_message("An unexpected error occurred.", ephemeral=True)
 
-@bot.tree.command(name="kick", description="Kick a member from the server")
+
+
+def rollen_check(interaction: discord.Interaction):
+    if not interaction.guild:  # Keine DMs
+        return False
+    user_roles = [role.name.lower() for role in interaction.user.roles]
+    return any(allowed_role in user_roles for allowed_role in ALLOWED_ROLES)
+
+@bot.tree.command(name="kick", description="Kickt ein Mitglied vom Server")
 @app_commands.check(rollen_check)
-@app_commands.describe(member="The member to kick", reason="Reason for the kick")
-async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
+@app_commands.describe(member="Das Mitglied, das gekickt werden soll", reason="Grund für den Kick")
+async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "Kein Grund angegeben"):
     try:
         await member.kick(reason=reason)
-        await interaction.response.send_message(f"{member} has been kicked. Reason: {reason}")
+        await interaction.response.send_message(f"{member} has been kicked reason: {reason}")
     except discord.Forbidden:
-        await interaction.response.send_message("I lack the required permissions to kick this member.", ephemeral=True)
+        await interaction.response.send_message("this bot doesnt have the required permission to kick a member", ephemeral=True)
     except discord.HTTPException:
-        await interaction.response.send_message("Failed to kick the member due to an unexpected error.", ephemeral=True)
+        await interaction.response.send_message("kick did you happen reason unknown", ephemeral=True)
 
 @kick.error
 async def kick_error(interaction: discord.Interaction, error):
     if isinstance(error, app_commands.errors.CheckFailure):
-        await interaction.response.send_message("You do not have the required role to use this command.", ephemeral=True)
+        await interaction.response.send_message("you dont have the required role to use this command", ephemeral=True)
     else:
-        await interaction.response.send_message("An unexpected error occurred.", ephemeral=True)
+        await interaction.response.send_message("an error happend", ephemeral=True)
 
-@bot.tree.command(name="bot_info", description="Shows information about the bot")
+@bot.tree.command(name="bot_info", description="Zeigt Informationen über den Bot")
 async def bot_info(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Bot Info",
-        description="Custom bot made by ferssss for fritz.exe and pixel.network",
+        description="this is a custom bot made by ferssss for fritz.exe and pixel.network",
         color=discord.Color.red()
     )
     embed.add_field(name="Version", value="1.0.0", inline=True)
     embed.add_field(name="Owner", value="fritz.exe", inline=True)
-    embed.add_field(name="Developer", value="ferssss", inline=True)
+    embed.add_field(name="developer", value="ferssss", inline=True)
     embed.set_footer(text="Danke fürs Nutzen des Bots!")
-    embed.set_thumbnail(url="https://cdn.discordapp.com/icons/1303769014635462728/64be2c5f2a798b593e3e38620ad565a7.png?size=1")
+    embed.set_thumbnail(
+        url="https://cdn.discordapp.com/icons/1303769014635462728/64be2c5f2a798b593e3e38620ad565a7.png?size=1")
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="server_info", description="Shows server information")
+
+
+
+
+@bot.tree.command(name="server_info", description="informationen from the server")
 async def server_info(interaction: discord.Interaction):
     guild = interaction.guild
     embed = discord.Embed(
@@ -131,9 +180,9 @@ async def server_info(interaction: discord.Interaction):
     embed.add_field(name="Owner", value=str(guild.owner), inline=True)
     await interaction.response.send_message(embed=embed)
 
-# ----- Reminder Command -----
-@bot.tree.command(name="reminder", description="Reminds you after a certain time")
-@app_commands.describe(time="Time like 10s, 5m, 2h, 1d", message="What to remind you about?")
+
+@bot.tree.command(name="reminder", description="Erinnert dich nach einer bestimmten Zeit an etwas.")
+@app_commands.describe(time="Zeitangabe wie 10s, 5m, 2h, 1d", message="Woran soll ich dich erinnern?")
 async def reminder(interaction: discord.Interaction, time: str, message: str):
     def parse_time(t: str) -> int:
         pattern = r"(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?"
@@ -141,24 +190,35 @@ async def reminder(interaction: discord.Interaction, time: str, message: str):
         if not match:
             return -1
         days, hours, minutes, seconds = [int(x) if x else 0 for x in match.groups()]
-        return days*86400 + hours*3600 + minutes*60 + seconds
+        return days * 86400 + hours * 3600 + minutes * 60 + seconds
 
     seconds = parse_time(time)
     if seconds <= 0:
-        await interaction.response.send_message("Example: `1h30m`, `45s`, `2d`", ephemeral=True)
+        await interaction.response.send_message("example: `1h30m`, `45s`, `2d`", ephemeral=True)
         return
     if any(re.search(pattern, message, re.IGNORECASE) for pattern in badwords):
-        await interaction.response.send_message("This bot cannot send bad words", ephemeral=True)
+        await interaction.response.send_message("this bot cant say bad words", ephemeral=True)
         return
+    await interaction.response.send_message(f"i will remind you in {time} at: **{message}**", ephemeral=True)
 
-    await interaction.response.send_message(f"I will remind you in {time}: **{message}**", ephemeral=True)
     await asyncio.sleep(seconds)
-    try:
-        await interaction.user.send(f"Reminder: **{message}**")
-    except discord.Forbidden:
-        await interaction.followup.send(f"{interaction.user.mention}, I couldn't DM you, but this was the reminder: **{message}**", ephemeral=True)
 
-# ----- Ticket System -----
+    try:
+        await interaction.user.send(f"reminder: **{message}**")
+    except discord.Forbidden:
+        await interaction.followup.send(f"{interaction.user.mention}, i wasnt able to send u a dm  but this was waht u wanted me to send u:**{message}**", ephemeral=True)
+
+
+
+@bot.tree.command(name="info_for_pixel-network", description="waht we do as a business")
+async def infopixel(interaction: discord.Interaction):
+    embed = discord.Embed(title="pixel-network_info",color=discord.Color.pink())
+    embed.add_field(name="info about us", value="we host your websites\nfor example discord bots\nor anything else that needs to be hosted our website is: https://pixel-network.de\n and if u want to see more of our features this is the link: https://pixel-network.de/features", inline=True)
+    await interaction.response.send_message(embed=embed)
+
+
+
+# ===== Views & Buttons =====
 class TicketView(View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -166,25 +226,40 @@ class TicketView(View):
 
 class TicketButton(Button):
     def __init__(self):
-        super().__init__(label="Open Ticket", style=discord.ButtonStyle.green)
+        super().__init__(label="open ticket", style=discord.ButtonStyle.green)
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.guild
         member = interaction.user
+
+        
         channel_name = f"ticket-{member.name.lower()}"
+
+        
         existing_channel = discord.utils.get(guild.text_channels, name=channel_name)
         if existing_channel:
-            await interaction.response.send_message(f"You already have a ticket: {existing_channel.mention}", ephemeral=True)
+            await interaction.response.send_message(
+                f"Du hast schon ein Ticket: {existing_channel.mention}", ephemeral=True
+            )
             return
 
+       
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             member: discord.PermissionOverwrite(view_channel=True, send_messages=True),
             guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
         }
         channel = await guild.create_text_channel(channel_name, overwrites=overwrites)
-        await interaction.response.send_message(f"Ticket created: {channel.mention}", ephemeral=True)
-        await channel.send(f"{member.mention}, welcome to the support ticket", view=CloseView())
+
+        await interaction.response.send_message(
+            f"ticket was created: {channel.mention}", ephemeral=True
+        )
+
+        
+        await channel.send(
+            f"{member.mention} welcome to the support ticket",
+            view=CloseView()
+        )
 
 class CloseView(View):
     def __init__(self):
@@ -193,29 +268,47 @@ class CloseView(View):
 
 class CloseButton(Button):
     def __init__(self):
-        super().__init__(label="Close Ticket", style=discord.ButtonStyle.red)
+        super().__init__(label="close ticket", style=discord.ButtonStyle.red)
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Closing ticket...", ephemeral=True)
+        await interaction.response.send_message("closing ticket", ephemeral=True)
         await interaction.channel.delete()
+
+
+@bot.event
+async def on_ready():
+    print(f"logged in as{bot.user}")
 
 @bot.command()
 async def ticketsetup(ctx):
-    allowed_users = owner  # nur Owner
+    allowed_roles_ticket = ["admin","moderator","ADMIN", "Admin", "Owner", "owner"]  
     if ctx.author.id not in allowed_users:
-        await ctx.send("You cannot use this command.")
+        await ctx.send("you cant use this command")
         return
-    await ctx.send("Click to open a support ticket", view=TicketView())
+
+    await ctx.send("click to open a support ticket", view=TicketView())
 
 @bot.command()
 async def close(ctx):
+    """Schließt den aktuellen Ticket-Channel (nur in Tickets)"""
     if ctx.channel.name.startswith("ticket-"):
-        await ctx.send("Closing ticket...")
+        await ctx.send("closing ticket")
         await ctx.channel.delete()
     else:
-        await ctx.send("This is not a ticket channel.")
+        await ctx.send("this isnt a ticket channel")
 
-# ----- Music Commands -----
+
+async def play_next(ctx, guild_id):
+    queue = queues[guild_id]
+    if queue:
+        source = queue.popleft()
+        voice_client = ctx.guild.voice_client
+        voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(ctx, guild_id), bot.loop))
+    else:
+        # Queue leer → Bot verlässt Voice
+        if ctx.guild.voice_client:
+            await ctx.guild.voice_client.disconnect()
+
 def create_source(url):
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -228,32 +321,23 @@ def create_source(url):
         info = ydl.extract_info(url, download=False)
         return discord.FFmpegPCMAudio(info['url'], options='-vn')
 
-async def play_next(ctx, guild_id):
-    queue = queues[guild_id]
-    if queue:
-        source = queue.popleft()
-        voice_client = ctx.guild.voice_client
-        voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(ctx, guild_id), bot.loop))
-    else:
-        if ctx.guild.voice_client:
-            await ctx.guild.voice_client.disconnect()
-
+#-----Commands-----#
 @bot.command()
 async def join(ctx):
     if ctx.author.voice:
         channel = ctx.author.voice.channel
         await channel.connect()
-        await ctx.send(f"Joined voice channel {channel.name}!")
+        await ctx.send(f"Bin dem Voice-Channel {channel.name} beigetreten!")
     else:
-        await ctx.send("You are not in a voice channel!")
+        await ctx.send("Du bist in keinem Voice-Channel!")
 
 @bot.command()
 async def leave(ctx):
     if ctx.guild.voice_client:
         await ctx.guild.voice_client.disconnect()
-        await ctx.send("Left the voice channel.")
+        await ctx.send("Bin raus aus dem Voice-Channel!")
     else:
-        await ctx.send("I'm not in a voice channel.")
+        await ctx.send("Ich bin in keinem Voice-Channel.")
 
 @bot.command()
 async def play(ctx, *, url):
@@ -265,7 +349,7 @@ async def play(ctx, *, url):
         if ctx.author.voice:
             await ctx.author.voice.channel.connect()
         else:
-            await ctx.send("You are not in a voice channel!")
+            await ctx.send("Du bist in keinem Voice-Channel!")
             return
 
     source = create_source(url)
@@ -273,34 +357,33 @@ async def play(ctx, *, url):
 
     if not ctx.guild.voice_client.is_playing():
         await play_next(ctx, guild_id)
-        await ctx.send(f"Now playing: {url}")
+        await ctx.send(f"Spiele jetzt: {url}")
     else:
-        await ctx.send(f"Added to queue: {url}")
+        await ctx.send(f"Song wurde zur Queue hinzugefügt: {url}")
 
 @bot.command()
 async def skip(ctx):
     if ctx.guild.voice_client and ctx.guild.voice_client.is_playing():
         ctx.guild.voice_client.stop()
-        await ctx.send("Skipped the current song!")
+        await ctx.send("Song wurde übersprungen!")
     else:
-        await ctx.send("Nothing is playing right now!")
+        await ctx.send("Es wird gerade nichts gespielt!")
 
 @bot.command()
 async def pause(ctx):
     if ctx.guild.voice_client and ctx.guild.voice_client.is_playing():
         ctx.guild.voice_client.pause()
-        await ctx.send("Paused the song!")
+        await ctx.send("Song pausiert!")
     else:
-        await ctx.send("Nothing is playing right now!")
+        await ctx.send("Es wird gerade nichts gespielt!")
 
 @bot.command()
 async def resume(ctx):
     if ctx.guild.voice_client and ctx.guild.voice_client.is_paused():
         ctx.guild.voice_client.resume()
-        await ctx.send("Resumed the song!")
+        await ctx.send("Song fortgesetzt!")
     else:
-        await ctx.send("The song is not paused!")
+        await ctx.send("Der Song ist nicht pausiert!")
 
-# ----- Start Bot mit Token Input -----
-token = getpass.getpass("Please enter your Discord Bot Token: ")
-bot.run(token)
+
+bot.run(input("was ist der token:")
