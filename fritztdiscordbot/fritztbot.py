@@ -386,4 +386,4 @@ async def resume(ctx):
         await ctx.send("Der Song ist nicht pausiert!")
 
 
-bot.run(input("was ist der token:")
+bot.run(input("was ist der token:"))
