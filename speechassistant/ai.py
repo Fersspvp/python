@@ -80,7 +80,7 @@ async def open_discord():
 async def whatsapp():
     await asyncio.to_thread(
         pywhatkit.sendwhatmsg_instantly,
-        "+49 15752947454",
+        "+nummber ...",
         "skibidi toilet ohio sigma",
         7  
     )
