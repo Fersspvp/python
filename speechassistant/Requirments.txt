@@ -1,0 +1,5 @@
+speech_recognition
+pywhatkit
+pyautogui
+edge_tts
+aiohttp
