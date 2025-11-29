@@ -1,30 +1,19 @@
 import tkinter
 from tkinter import font, scrolledtext, messagebox, ttk, Menu
 
-
-
-
-
-
-
-#make window
 root = tkinter.Tk()
+root.geometry("400x300")
 
 scrolltext_widget = None
-#refresh the screen so it doesnt bug out dont delete
+
 def clear_screen():
     for widget in root.winfo_children():
         if not isinstance(widget, tkinter.Menu):
             widget.destroy()
 
-
-
-
-
-
 #admin login
+
 def adminlogin():
-    get_admin_passwords_and_usernames()
     clear_screen()
     global admin_password_entry
     global admin_entry
@@ -39,22 +28,17 @@ def adminlogin():
     submit_button = tkinter.Button(root, text="Submit", command=submitt_for_admin)
     submit_button.pack()
 
-
-
-
 def get_admin_passwords_and_usernames():
-    global usernames_and_passwords_from_admin_file
-    with open("admin_usernames_and_passwords.txt", "r") as f:
-        usernames_and_passwords_from_admin_file = f.read()
-        print(usernames_and_passwords_from_admin_file)
+    with open("dmin\\usernamesadmin.txt", "r") as f:
+        usernames_from_admin = f.read()
+        print()
 
 
 def submitt_for_admin():
-    global admin_username_menu
-    admin_username_menu = admin_entry.get()
+    global adminusernamemenu
+    adminusernamemenu = admin_entry.get()
     password = admin_password_entry.get()
-    print(admin_username_menu,password)
-    if usernames_and_passwords_from_admin_file == "ferdinand ferdinand123" and password:
+    if adminusernamemenu == "ferdinand" and password == "ferdinand123":
         succesfull_login_admin()
 
 
@@ -70,10 +54,10 @@ def succesfull_login_admin():
         sub_menu = Menu(file_menu, tearoff=0)
         sub_menu.add_command(label="jahrgang suchen", command=ganzer_jahrgang)
         sub_menu.add_command(label="SuS suchen", command=SuSsuchen)
-        sub_menu.add_command(label="SuS daten bearbeiten", command=SuS_daten_bearbeiten)
+        sub_menu.add_command(label="SuS daten bearbeiten", command=SuSmachen)
         file_menu.add_cascade(label="Suchen", menu=sub_menu)
     root.geometry("500x500")
-    welcome_label = tkinter.Label(root, text=f"Willkommen, {admin_username_menu}!",font=("Arial", 16, "bold"))
+    welcome_label = tkinter.Label(root, text=f"Willkommen, {adminusernamemenu}!",font=("Arial", 16, "bold"))
     welcome_label.pack(pady=50)
 
 
@@ -102,9 +86,8 @@ def ganzer_jahrgang():
     submitt_button_for_jahrgans_suche.pack()
 
 def jahrgang_suchen():
-    global jahrgang
     jahrgang = jahrgang_eingabe.get()
-    with open(f"SCHUELERDATEN_PROJEKT_NEU/JAHRGANG_{jahrgang}/schueller_des_jahrgangs.txt", "r") as f:
+    with open(f"SCHUELERDATEN_PROJEKT_NEU\\JAHRGANG_{jahrgang}\\schueller_des_jahrgangs.txt", "r") as f:
         schueller_des_jahrgangs_daten = f.read()
         clean_schueller_des_jahrgangs = schueller_des_jahrgangs_daten.strip()
     global scrolltext_widget
@@ -127,7 +110,7 @@ def jahrgang_suchen():
 
 #SuS daten
 
-def SuS_daten_bearbeiten():
+def SuSmachen():
     print("idk cuh do it yourself or smth tbh")
 
 
@@ -156,13 +139,10 @@ def SuSsuchen():
 
 def SuS_daten_suchen():
     global bereinigter_text
-    global jahrgang_des_schuellers
-    global name_des_schuellers
-    global klasse_des_schuellers
     jahrgang_des_schuellers = schueller_suchen_jahrgang_eingabe.get()
     name_des_schuellers = schueller_suchen_eingabe.get()
     klasse_des_schuellers = schueller_suchen_klasse_eingabe.get()
-    file_path = f"Schuelerdaten_Projekt_Neu/Jahrgang_{jahrgang_des_schuellers}/Klasse_{klasse_des_schuellers.upper()}/{name_des_schuellers.upper()}.txt"
+    file_path = f"Schuelerdaten_Projekt_Neu\\Jahrgang_{jahrgang_des_schuellers}\\Klasse_{klasse_des_schuellers.upper()}\\{name_des_schuellers.upper()}.txt"
     with open(file_path, "r", encoding="utf-8") as f:
         daten_SuS_from_file = f.read()
         bereinigter_text = daten_SuS_from_file.replace("{", "").replace("}", "").replace("#", "").strip()
@@ -183,7 +163,7 @@ def SuS_daten_anzeigen_admin():
     scrolltext_widget.config(state='disabled')
 
 
-adminlogin()
 
+adminlogin()
 
 root.mainloop()
