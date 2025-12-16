@@ -1,97 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tooltip Examples</title>
+<title>Human Rights World Map</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
-  /* CSS Tooltip with data-tooltip */
-  .tt {
-    --tt-x: 0px;
-    --tt-y: -125%;
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-    color: #007bff;
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
   }
 
-  .tt::after {
-    content: attr(dt-tt);
-    position: absolute;
-    top: var(--tt-y);
-    left: var(--tt-x);
-    transform: translateX(-50%);
-    background: #555;
-    color: #fff;
-    padding: 5px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-    z-index: 10;
+  #map {
+    height: 100vh;
+    width: 100%;
   }
 
-  .tt:hover::after {
-    opacity: 1;
-  }
-.tt-pos[data-pos="top"] {
-  --tt-x: 50%;
-  --tt-y: -125%;
-}
-
-.tt-pos[data-pos="bottom"] {
-  --tt-x: 50%;
-  --tt-y: 10px;
-}
-
-.tt-pos[data-pos="left"] {
-  --tt-x: -10px;
-  --tt-y: 50%;
-}
-
-.tt-pos[data-pos="right"] {
-  --tt-x: calc(100% + 10px);
-  --tt-y: 50%;
-}
-  /* Optional: arrow for CSS tooltip */
-  .tt::before {
-    content: "";
-    position: absolute;
-    bottom: 115%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 5px;
-    border-style: solid;
-    border-color: #555 transparent transparent transparent;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .tt-pos {
-    position: var(--ttpos);
-  }
-
-  .tt:hover::before {
-    opacity: 1;
+  .tooltip {
+    font-size: 13px;
   }
 </style>
 </head>
 <body>
 
-<h2>Tooltip Examples</h2>
+<div id="map"></div>
 
-<p>
-  Hover over this text for a <span class="tt" dt-tt="This is a CSS tooltip!">CSS tooltip</span>.
-</p>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<p>
-  <span class="tt"
-      style="--tt-x: 50%; --tt-y: -120%;"
-      dt-tt="idk">a</span>
+<script>
+  const map = L.map("map").setView([20, 0], 2);
 
-</p>
-<span class="tt tt-pos" data-pos="bottom" dt-tt="Tooltip below!">Test</span>
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
+  }).addTo(map);
+
+  // Beispiel: Human-Rights-Daten (pro Land)
+  const humanRights = {
+    China: [
+      "Meinungsfreiheit",
+      "Pressefreiheit",
+      "Religionsfreiheit"
+    ],
+    Russia: [
+      "Faire Wahlen",
+      "Meinungsfreiheit"
+    ],
+    "Saudi Arabia": [
+      "Frauenrechte",
+      "Meinungsfreiheit"
+    ],
+    "North Korea": [
+      "Alle Grundrechte"
+    ]
+  };
+
+  // Länder-Grenzen (GeoJSON – ALLE Länder)
+  fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
+    .then(res => res.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style: {
+          color: "#555",
+          weight: 1,
+          fillColor: "#ccc",
+          fillOpacity: 0.6
+        },
+
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name;
+          const rights = humanRights[name];
+
+          let tooltipText = `<strong>${name}</strong><br>`;
+
+          if (rights) {
+            tooltipText += "Verletzte Rechte:<ul>";
+            rights.forEach(r => tooltipText += `<li>${r}</li>`);
+            tooltipText += "</ul>";
+          } else {
+            tooltipText += "Keine Daten / geringe Verstöße";
+          }
+
+          layer.bindTooltip(tooltipText, {
+            sticky: true,
+            opacity: 1
+          });
+
+          layer.on({
+            mouseover: e => {
+              e.target.setStyle({
+                fillColor: "#ff6b6b"
+              });
+            },
+            mouseout: e => {
+              e.target.setStyle({
+                fillColor: "#ccc"
+              });
+            }
+          });
+        }
+      }).addTo(map);
+    });
+</script>
 
 </body>
 </html>
-
