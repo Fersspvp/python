@@ -37,24 +37,64 @@
   }).addTo(map);
 
   // Beispiel: Human-Rights-Daten (pro Land)
-  const humanRights = {
-    China: [
-      "Meinungsfreiheit",
-      "Pressefreiheit",
-      "Religionsfreiheit"
-    ],
-    Russia: [
-      "Faire Wahlen",
-      "Meinungsfreiheit"
-    ],
-    "Saudi Arabia": [
-      "Frauenrechte",
-      "Meinungsfreiheit"
-    ],
-    "North Korea": [
-      "Alle Grundrechte"
-    ]
-  };
+const humanRights = {
+  Russia: [
+    "Faire Wahlen",
+    "Meinungsfreiheit",
+    "Versammlungsfreiheit",
+    "Pressefreiheit"
+  ],
+
+  China: [
+    "Meinungsfreiheit",
+    "Pressefreiheit",
+    "Religionsfreiheit",
+    "Rechte ethnischer Minderheiten"
+  ],
+
+  Iran: [
+    "Meinungsfreiheit",
+    "Frauenrechte",
+    "Religionsfreiheit",
+    "Recht auf ein faires Gerichtsverfahren"
+  ],
+
+  "North Korea": [
+    "Meinungsfreiheit",
+    "Bewegungsfreiheit",
+    "Recht auf Leben",
+    "Recht auf ein faires Gerichtsverfahren"
+  ],
+
+  "Saudi Arabia": [
+    "Frauenrechte",
+    "Meinungsfreiheit",
+    "Versammlungsfreiheit",
+    "Rechte von LGBTQ+-Personen"
+  ],
+
+  Myanmar: [
+    "Faire Wahlen",
+    "Recht auf Leben",
+    "Meinungsfreiheit",
+    "Schutz ethnischer Minderheiten"
+  ],
+
+  Venezuela: [
+    "Faire Wahlen",
+    "Meinungsfreiheit",
+    "Recht auf ein faires Gerichtsverfahren",
+    "Versammlungsfreiheit"
+  ],
+
+  Belarus: [
+    "Faire Wahlen",
+    "Meinungsfreiheit",
+    "Pressefreiheit",
+    "Versammlungsfreiheit"
+  ]
+};
+
 
   // Länder-Grenzen (GeoJSON – ALLE Länder)
   fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
