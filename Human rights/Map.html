@@ -36,7 +36,6 @@
     attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  // Beispiel: Human-Rights-Daten (pro Land)
 const humanRights = {
   Russia: [
     "Faire Wahlen",
@@ -96,7 +95,7 @@ const humanRights = {
 };
 
 
-  // Länder-Grenzen (GeoJSON – ALLE Länder)
+  
   fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
     .then(res => res.json())
     .then(data => {
