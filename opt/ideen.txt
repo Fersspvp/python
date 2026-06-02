@@ -1,4 +1,4 @@
-eine appliaction die so ist wie google auth
+eine appliaction die so ist wie google auth die über einen discord bot laufen kann so das ich mich über ein discord kanal den otp holen kann oder vielleicht einen anderen weg womit ich meinen raspberry pi benutzten kann
 
 eine appliaction die die api von have i been pawned benutzt un zu checken ob passwörter noch sicher sind maybe mann kann das auch in die erste application
 
